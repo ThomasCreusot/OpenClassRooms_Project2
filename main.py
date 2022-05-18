@@ -115,13 +115,24 @@ def number_available_extraction(product_information):
     return number_available
 
 
+products_with_AttributeError_for_product_description_extraction = []
+
+
 def product_description_extraction(soup_product):
     """Returns product_description from soup_product"""
 
-    product_description_title = soup_product.find(id = "product_description")
-    product_description = product_description_title.find_next_sibling("p").string
-    products_descriptions_list.append(product_description)
+    global products_with_AttributeError_for_product_description_extraction
 
+    #error with http://books.toscrape.com/catalogue/alice-in-wonderland-alices-adventures-in-wonderland-1_5/index.html
+    try:
+        product_description_title = soup_product.find(id = "product_description")
+        product_description = product_description_title.find_next_sibling("p").string
+    except AttributeError:
+        product_description = ""
+        products_with_AttributeError_for_product_description_extraction.append(title_extraction(soup_product))
+        print("AttributeError : No title for this product")
+
+    products_descriptions_list.append(product_description)
     return product_description
 
 
@@ -224,8 +235,12 @@ def soup_product_information_extraction(requests_web_page_product, soup_product,
     print("Extraction of product information done for : {0}".format(title))
 
 
+products_with_UnicodeEncodeError_for_information_loading_csv = []
+
 def product_information_loading_csv_format():
     """Writes product information in a CSV file"""
+
+    global products_with_UnicodeEncodeError_for_information_loading_csv
 
     #Definition of the table headers
     table_headers = ["product_page_url", "universal_product_code", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
@@ -242,17 +257,24 @@ def product_information_loading_csv_format():
             line = [product_page_url, universal_product_code, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url]
             
             #Writing each line in the CSV file 
-            csv_writer.writerow(line)
+            try:
+                csv_writer.writerow(line)
+                print("CSV writing of product information done for : {0}".format(line[2]))
+            except UnicodeEncodeError:
+                #raise Exception("UnicodeEncodeError found")
+                products_with_UnicodeEncodeError_for_information_loading_csv.append(line[2])
+                print("UnicodeEncodeError found")
 
-        print("CSV writing of product information done for : {0}".format(line[2]))
 
 
 
 complete_product_urls_list_reinitizaliation = True
 
-def listing_products_urls_from_category(url_category):
+def listing_products_urls_from_category(url_category, url_category_pageX =""):
     """Extracts and returns URLs of all products of a CATEGORY"""
+    """url_category_pageX is empty; then , it takes "page2", "page3", etc as value, to complete the url"""
 
+    #Reinitialization of the list of urls of products, if the category changes ; if we are on a "next" page, we keep the list a complete it
     global complete_product_urls_list_reinitizaliation
     global complete_product_urls_list
 
@@ -262,7 +284,7 @@ def listing_products_urls_from_category(url_category):
         complete_product_urls_list = complete_product_urls_list
 
     #Creation of a requests and a soup objects corresponding to a category page
-    requests_web_page_category = requests.get(url_category)
+    requests_web_page_category = requests.get(url_category + url_category_pageX)
     soup_category = BeautifulSoup(requests_web_page_category.content, "html.parser")
 
     #Extraction of links of each products of a category, from the URL of the category
@@ -295,16 +317,17 @@ def listing_products_urls_from_category(url_category):
         
         #Identification of the link for the next page
         category_li_link_a = category_li_class_next.find("a")
-        category_li_link_a_href = category_li_link_a["href"] 
-        next_page_link = url_category + category_li_link_a_href
-        print("There is a NEXT button at the adress {0}".format(next_page_link))
-        listing_products_urls_from_category(next_page_link) #RECURSIVITY.
+        url_category_pageX = category_li_link_a["href"]
+        ##category_li_link_a_href = category_li_link_a["href"] 
+        ##next_page_link = url_category + category_li_link_a_href
+        print("There is a NEXT button towards the adress {0}".format(url_category + url_category_pageX))
+        listing_products_urls_from_category(url_category, url_category_pageX) #RECURSIVITY.
 
     else: 
         print("error")
         pass
 
-    print("All products url has been listed for the category {0}".format(url_category))
+    print("All products url has been listed for the category {0}".format(url_category + url_category_pageX))
     return complete_product_urls_list
 
 
@@ -375,9 +398,14 @@ def main(url_book_to_scrap):
             product_information_loading_csv_format()
             print("")
 
-    print("ETL performed for each product of the {0} website: performed with success".format(url_book_to_scrap))
+    print("")
+    print("")
+    print("================================ CONCLUSION ================================")
+
+    print("UnicodeEncodeError was/were found during CSV loading for the following products {0}".format(products_with_UnicodeEncodeError_for_information_loading_csv))
+
+    print("product_description was not found for the following products: {0}".format(products_with_AttributeError_for_product_description_extraction))
+
+    print("ETL performed for each product of the {0} website: performed with success. Errors which happenned during the execution are listed hereunder".format(url_book_to_scrap))
 
 main("http://books.toscrape.com/index.html")
-
-
-
