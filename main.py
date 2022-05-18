@@ -202,25 +202,26 @@ def soup_product_information_extraction(requests_web_page_product, soup_product,
     image_url = image_url_extraction(soup_product)
 
     #TEST
-    print("product_page_url", product_page_url)
-    print("")
-    print("universal_product_code", universal_product_code)
-    print("")
-    print("title", title)
-    print("")
-    print("price_including_tax", price_including_tax)
-    print("")
-    print("price_excluding_tax", price_excluding_tax)
-    print("")
-    print("number_available", number_available)
-    print("")
-    print("product_description", product_description)
-    print("")
-    print("category", category)
-    print("")
-    print("review_rating", review_rating)
-    print("")
-    print("image_url", image_url)
+    #print("product_page_url", product_page_url)
+    #print("")
+    #print("universal_product_code", universal_product_code)
+    #print("")
+    #print("title", title)
+    #print("")
+    #print("price_including_tax", price_including_tax)
+    #print("")
+    #print("price_excluding_tax", price_excluding_tax)
+    #print("")
+    #print("number_available", number_available)
+    #print("")
+    #print("product_description", product_description)
+    #print("")
+    #print("category", category)
+    #print("")
+    #print("review_rating", review_rating)
+    #print("")
+    #print("image_url", image_url)
+    print("Extraction of product information done for : {0}".format(title))
 
 
 def product_information_loading_csv_format():
@@ -243,13 +244,22 @@ def product_information_loading_csv_format():
             #Writing each line in the CSV file 
             csv_writer.writerow(line)
 
+        print("CSV writing of product information done for : {0}".format(line[2]))
 
 
 
-complete_product_urls_list = []
+complete_product_urls_list_reinitizaliation = True
 
 def listing_products_urls_from_category(url_category):
     """Extracts and returns URLs of all products of a CATEGORY"""
+
+    global complete_product_urls_list_reinitizaliation
+    global complete_product_urls_list
+
+    if complete_product_urls_list_reinitizaliation == True:
+        complete_product_urls_list = []
+    else:
+        complete_product_urls_list = complete_product_urls_list
 
     #Creation of a requests and a soup objects corresponding to a category page
     requests_web_page_category = requests.get(url_category)
@@ -263,7 +273,7 @@ def listing_products_urls_from_category(url_category):
     category_ol_li_class_col_xs = category_ol_class_row.findAll(class_ = "col-xs-6 col-sm-4 col-md-3 col-lg-3")
 
     for lis in category_ol_li_class_col_xs:
-        print(lis)
+        #print(lis)
         category_ol_li_article = lis.find("article")
         category_ol_li_article_div = category_ol_li_article.find("div", class_ = "image_container")
         category_ol_li_article_div_a = category_ol_li_article_div.find("a")
@@ -272,102 +282,102 @@ def listing_products_urls_from_category(url_category):
         
         complete_product_urls_list.append(complete_product_link)
 
-
     #RECURSIVITY 
     category_li_class_next = soup_category.find("li", class_ = "next")
 
     if category_li_class_next == None:
-        #print("No NEXT button")
+        print("No NEXT button")
+        complete_product_urls_list_reinitizaliation = True
         pass
     
     elif category_li_class_next != None:
+        complete_product_urls_list_reinitizaliation = False
+        
         #Identification of the link for the next page
         category_li_link_a = category_li_class_next.find("a")
         category_li_link_a_href = category_li_link_a["href"] 
-        next_page_link = "http://books.toscrape.com/catalogue/category/books/mystery_3/" + category_li_link_a_href
-        #print("There is a NEXT button at the adress {0}".format(next_page_link))
+        next_page_link = url_category + category_li_link_a_href
+        print("There is a NEXT button at the adress {0}".format(next_page_link))
         listing_products_urls_from_category(next_page_link) #RECURSIVITY.
 
     else: 
-        #print("error")
+        print("error")
         pass
 
-    print(complete_product_urls_list)
+    print("All products url has been listed for the category {0}".format(url_category))
     return complete_product_urls_list
 
 
 
 
+url_complete_book_category_without_indexHtml_list = []
+
+def listing_category_urls_from_website(url_book_to_scrap):
+    """Extracts and returns URLs of all categories of a website"""
+
+    #Creation of a requests and a soup objects corresponding to a website index.html page
+    requests_web_page_book_to_scrap = requests.get(url_book_to_scrap)
+    soup_book_to_scrap = BeautifulSoup(requests_web_page_book_to_scrap.content, "html.parser")
+
+    #Extraction of links of each category of the website, from the URL of the index.html page of the website 
+    book_to_scrap_div_side_books_categories = soup_book_to_scrap.find(class_ = "side_categories")
+    book_to_scrap_ul_navigation_list_books_categories = book_to_scrap_div_side_books_categories.find(class_ = "nav nav-list") 
+    book_to_scrap_books_categories_list = book_to_scrap_ul_navigation_list_books_categories.findAll("li")[1:] #[1:] --> exclusion of "Books": not a category
+    for lis in book_to_scrap_books_categories_list:
+        link_a_book_categorie = lis.find("a")
+        
+        link_a_href_book_categorie = link_a_book_categorie["href"]
+        url_complete_book_category = "http://books.toscrape.com/" + link_a_href_book_categorie
+        url_complete_book_category_without_indexHtml = url_complete_book_category[:-10]
+
+        name_book_category = link_a_book_categorie.string[62:-54] #spaces before the name
+
+        print("URL for '{0}' category found at : {1}".format(name_book_category, url_complete_book_category))
+        
+        url_complete_book_category_without_indexHtml_list.append(url_complete_book_category_without_indexHtml)
+
+    return url_complete_book_category_without_indexHtml_list
 
 
-def main(url_category):
+
+def main(url_book_to_scrap):
     """ . """      
 
-    """1. Extraction of products urls from one category url"""
-    listing_products_urls_from_category(url_category)
-    for complete_product_url in complete_product_urls_list:
+    print("")
+    print("== CATEGORIES FOUND ON THE WEBSITE {0} ==".format(url_book_to_scrap))
+    print("")
+    listing_category_urls_from_website(url_book_to_scrap)
+    for url_category in url_complete_book_category_without_indexHtml_list:
 
-        """2. ETL at product scale"""
-        """
-        Requests and Soup objects initialization; 
-        Information, (from table) extraction
-        Extraction of all information asked; and save in python tables []
-        """
-        requests_web_page_product = requests_web_page_product_initialization(complete_product_url)
-        soup_product = soup_product_initialization(requests_web_page_product)
-        soup_product_information_table = soup_product_information_table_initialization(soup_product)
-            
-        soup_product_information_extraction(requests_web_page_product, soup_product, soup_product_information_table)
+        print("")
+        print("==== PRODUCTS FOUND FOR EACH CATEGORY ====")
+        print("")
+        """1. Extraction of products urls from one category url"""
+        complete_product_urls_list = listing_products_urls_from_category(url_category)
+        for complete_product_url in complete_product_urls_list:
 
-        """
-        Writing in CSV file
-        """
-        product_information_loading_csv_format()
+            """2. ETL at product scale"""
+            """
+            2.1 Requests and Soup objects initialization; 
+            Information, (from table) extraction
+            Extraction of all information asked; and save in python tables []
+            """
+            print("====== PRODUCT ETL ======")
+            requests_web_page_product = requests_web_page_product_initialization(complete_product_url)
+            soup_product = soup_product_initialization(requests_web_page_product)
+            soup_product_information_table = soup_product_information_table_initialization(soup_product)
+                
+            soup_product_information_extraction(requests_web_page_product, soup_product, soup_product_information_table)
 
+            """
+            2.2 Writing in CSV file
+            """
+            product_information_loading_csv_format()
+            print("")
 
-main("http://books.toscrape.com/catalogue/category/books/mystery_3/index.html")
+    print("ETL performed for each product of the {0} website: performed with success".format(url_book_to_scrap))
 
-
-
-
-"""
-
-#Step 3 : Choisissez n'importe quelle catégorie sur le site de Books to Scrape.
-#Écrivez un script Python qui consulte la page de la catégorie choisie, et extrait l'URL de la page 
-#Produit de chaque livre appartenant à cette catégorie
-#Remarque : certaines pages de catégorie comptent plus de 20 livres, qui sont donc répartis sur différentes pages 
-#(«  pagination  »). Votre application doit être capable de parcourir automatiquement les multiples pages si présentes. 
-#
-#-->avec la classe "pager" ? non, chercher "next", le bouton devrait contenir le lien ; à combiner avec une fonction if 
-#ou alors while next = None:
+main("http://books.toscrape.com/index.html")
 
 
 
-
-
-#step 4 : Ensuite, étendez votre travail à l'écriture d'un script qui consulte le site de Books to Scrape, extrait toutes les catégories de livres 
-
-url_book_to_scrap = "http://books.toscrape.com/"
-requests_web_page_book_to_scrap = requests.get(url_book_to_scrap)
-soup_book_to_scrap = BeautifulSoup(requests_web_page_book_to_scrap, "html.parser")
-
-
-product_information_table = soup.find(class_ = "table table-striped")
-product_information = product_information_table.find_all("td")
-
-book_to_scrap_div_side_books_categories = soup_book_to_scrap.find(class_ = "side_categories")
-#book_to_scrap_ul_navigation_list_books_categories = book_to_scrap_div_side_books_categories.find(class_ = "nav nav-list")
-book_to_scrap_books_categories_list = book_to_scrap_div_side_books_categories.findAll("li")
-for lis in book_to_scrap_books_categories_list:
-    link_a_book_categorie = lis.find("a")
-    
-    link_a_href_book_categorie = link_a_book_categorie["href"]
-    link_complete_book_category = "http://books.toscrape.com/" + link_a_href_book_categorie
-    
-    name_book_category = link_a_book_categorie.string[62:] #spaces before the name
-
-    print(link_complete_book_category)
-    print(name_book_category)
-
-
-"""
