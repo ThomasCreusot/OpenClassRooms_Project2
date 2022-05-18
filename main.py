@@ -3,21 +3,13 @@ Project OpenClassRooms n°2 : Uses bases of Python for market analysis
 """
 
 from itertools import product
+from os import link
+
 import requests
 from bs4 import BeautifulSoup
 
 import csv
 
-
-"""
-Step 1 : Écrivez un script Python qui visite cette page et en extrait les informations suivantes
-"""
-
-
-"""Initialization of a BeautifulSoup object"""
-url = "http://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html"
-HTML_web_page = requests.get(url)
-soup = BeautifulSoup(HTML_web_page.content, "html.parser")
 
 review_rating_string_int_correspondance = {
     "One" : 1,
@@ -39,36 +31,80 @@ categories_list = []
 review_ratings_list = []
 images_urls_list = []
 
-def information_extraction():
-    """Extraction of information asked by the step 1 of the OpenClassRoom project"""
+
+def requests_web_page_product_initialization(url_product):
+    """Initialization of a Requests object corresponding to a product (a book) web page"""
+
+    requests_web_page_product = requests.get(url_product)
+
+    return requests_web_page_product
 
 
+def soup_product_initialization(requests_web_page_product):
+    """Initialization of a BeautifulSoup object corresponding to a product (a book) web page"""
+
+    soup_product = BeautifulSoup(requests_web_page_product.content, "html.parser")
+    
+    return soup_product
 
 
-    #Product information table
-    product_information_table = soup.find(class_ = "table table-striped")
+def soup_product_information_table_initialization(soup_product):
+    """Initialization of the information table of the soup product"""
+ 
+    product_information_table = soup_product.find(class_ = "table table-striped")
     product_information = product_information_table.find_all("td")
 
-    #URL
-    product_page_url = HTML_web_page.url
+    return product_information 
+
+
+def product_page_urls_list_extraction(requests_web_page_product):
+    """Returns product_page_url from HTML_web_page_product"""
+
+    product_page_url = requests_web_page_product.url
     product_page_urls_list.append(product_page_url)
 
-    #UPC
+    return product_page_url
+
+
+def universal_product_code_extraction(product_information):
+    """Returns universal_product_code from product_information"""
+
     universal_product_code = product_information[0].string
     universal_product_codes_list.append(universal_product_code)
 
-    #Title
-    title = soup.find(class_ = "active").string
+    return universal_product_code
+
+
+def title_extraction(soup_product):
+    """Returns title from soup_product"""
+
+    title = soup_product.find(class_ = "active").string
     titles_list.append(title)
 
-    #Prices
+    return title
+
+
+def price_including_tax_extraction(product_information):
+    """Returns price_including_tax from product_information"""
+
     price_including_tax = product_information[3].string
     prices_including_tax_list.append(price_including_tax)
+
+    return price_including_tax
+
+
+def price_excluding_tax_extraction(product_information):
+    """Returns price_excluding_tax from product_information"""
 
     price_excluding_tax = product_information[2].string
     prices_excluding_tax_list.append(price_excluding_tax)
 
-    #Availability
+    return price_excluding_tax
+
+
+def number_available_extraction(product_information):
+    """Returns number_available from product_information"""
+
     availability = product_information[5].string
     if "In stock" in availability:
         number_available = availability[10:-11]
@@ -76,22 +112,37 @@ def information_extraction():
         number_available = "No available"
     numbers_available_list.append(number_available)
 
-    #Product description
-    product_description_title = soup.find(id = "product_description")
+    return number_available
+
+
+def product_description_extraction(soup_product):
+    """Returns product_description from soup_product"""
+
+    product_description_title = soup_product.find(id = "product_description")
     product_description = product_description_title.find_next_sibling("p").string
     products_descriptions_list.append(product_description)
 
-    #Category
-    breadcrumb_class = soup.find(class_="breadcrumb")
+    return product_description
+
+
+def catergory_extraction(soup_product):
+    """Returns category from soup_product"""
+
+    breadcrumb_class = soup_product.find(class_="breadcrumb")
     breadcrumb_class_lis = breadcrumb_class.findAll("li")
     breadcrumb_class_lis_a = breadcrumb_class_lis[2]
     category = breadcrumb_class_lis_a.find("a").string
     categories_list.append(category)
 
-    #Review rating
+    return category 
+
+
+def review_rating_extraction(soup_product):
+    """Returns review_rating from soup_product"""
+
     #NB: i tried with """ print(paragraph["class_"]) """" : key error
     paragraphs_attributes = []
-    paragraphs = soup.findAll("p")
+    paragraphs = soup_product.findAll("p")
     for paragraph in paragraphs:
         paragraphs_attributes.append(paragraph.attrs)
     for paragraphs_attribute in paragraphs_attributes:
@@ -102,11 +153,53 @@ def information_extraction():
     review_rating = review_rating_string_int_correspondance[review_rating_string]
     review_ratings_list.append(review_rating)
 
-    #Image URL
-    item_active = soup.find(class_ ="item active")
+    return review_rating
+
+
+def image_url_extraction(soup_product):
+    """Returns image_url from soup_product"""
+
+    item_active = soup_product.find(class_ ="item active")
     image = item_active.find("img") 
     image_url = "http://books.toscrape.com" + image["src"][5:]
-    images_urls_list.append(image_url)    
+    images_urls_list.append(image_url)
+    
+    return image_url
+
+
+
+def soup_product_information_extraction(requests_web_page_product, soup_product, product_information):
+    """Extraction of information asked by the step 1 of the OpenClassRoom project"""
+
+    #URL
+    product_page_url = product_page_urls_list_extraction(requests_web_page_product)
+
+    #UPC
+    universal_product_code = universal_product_code_extraction(product_information)
+
+    #Title
+    title = title_extraction(soup_product)
+
+    #Price including tax
+    price_including_tax = price_including_tax_extraction(product_information)
+
+    #Price excluding tax
+    price_excluding_tax = price_excluding_tax_extraction(product_information)
+
+    #Availability
+    number_available = number_available_extraction(product_information)
+
+    #Product description
+    product_description = product_description_extraction(soup_product)
+
+    #Category
+    category = catergory_extraction(soup_product)
+
+    #Review rating
+    review_rating = review_rating_extraction(soup_product)
+
+    #Image URL
+    image_url = image_url_extraction(soup_product)
 
     #TEST
     print("product_page_url", product_page_url)
@@ -130,31 +223,151 @@ def information_extraction():
     print("image_url", image_url)
 
 
+def product_information_loading_csv_format():
+    """Writes product information in a CSV file"""
 
-"""STEP 2 : Écrivez les données dans un fichier CSV qui utilise les champs ci-dessus comme en-têtes de colonnes."""
-def information_csv_loading():
+    #Definition of the table headers
     table_headers = ["product_page_url", "universal_product_code", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
 
-    #new file creation
+    #New CSV file creation
     with open('books_toscrap.csv', 'w') as csv_file:
     
-    #creation of a 'writer' object
+    #Creation of a 'writer' object
         csv_writer = csv.writer(csv_file, delimiter=',')
         csv_writer.writerow(table_headers)
 
+        #Definition of a line : information from python lists/tables [] from soup_product_information_extraction
         for product_page_url, universal_product_code, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url in zip(product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list) :
             line = [product_page_url, universal_product_code, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url]
+            
+            #Writing each line in the CSV file 
             csv_writer.writerow(line)
 
-def main():
-    information_extraction()
-    information_csv_loading()
 
-main()
+
+
+complete_product_urls_list = []
+
+def listing_products_urls_from_category(url_category):
+    """Extracts and returns URLs of all products of a CATEGORY"""
+
+    #Creation of a requests and a soup objects corresponding to a category page
+    requests_web_page_category = requests.get(url_category)
+    soup_category = BeautifulSoup(requests_web_page_category.content, "html.parser")
+
+    #Extraction of links of each products of a category, from the URL of the category
+        #category_ol_class_row : searching the element "ol" with class "row"
+    category_ol_class_row = soup_category.find("ol", class_ = "row")
+
+        #category_ol_li_class_col_xs : searching the element "li" with class "col_xs..." WITHIN the element ol previously found
+    category_ol_li_class_col_xs = category_ol_class_row.findAll(class_ = "col-xs-6 col-sm-4 col-md-3 col-lg-3")
+
+    for lis in category_ol_li_class_col_xs:
+        print(lis)
+        category_ol_li_article = lis.find("article")
+        category_ol_li_article_div = category_ol_li_article.find("div", class_ = "image_container")
+        category_ol_li_article_div_a = category_ol_li_article_div.find("a")
+        category_ol_li_article_div_a_href = category_ol_li_article_div_a["href"] 
+        complete_product_link = "http://books.toscrape.com/catalogue" + category_ol_li_article_div_a_href[8:]
+        
+        complete_product_urls_list.append(complete_product_link)
+
+
+    #RECURSIVITY 
+    category_li_class_next = soup_category.find("li", class_ = "next")
+
+    if category_li_class_next == None:
+        #print("No NEXT button")
+        pass
+    
+    elif category_li_class_next != None:
+        #Identification of the link for the next page
+        category_li_link_a = category_li_class_next.find("a")
+        category_li_link_a_href = category_li_link_a["href"] 
+        next_page_link = "http://books.toscrape.com/catalogue/category/books/mystery_3/" + category_li_link_a_href
+        #print("There is a NEXT button at the adress {0}".format(next_page_link))
+        listing_products_urls_from_category(next_page_link) #RECURSIVITY.
+
+    else: 
+        #print("error")
+        pass
+
+    print(complete_product_urls_list)
+    return complete_product_urls_list
+
+
+
+
+
+
+def main(url_category):
+    """ . """      
+
+    """1. Extraction of products urls from one category url"""
+    listing_products_urls_from_category(url_category)
+    for complete_product_url in complete_product_urls_list:
+
+        """2. ETL at product scale"""
+        """
+        Requests and Soup objects initialization; 
+        Information, (from table) extraction
+        Extraction of all information asked; and save in python tables []
+        """
+        requests_web_page_product = requests_web_page_product_initialization(complete_product_url)
+        soup_product = soup_product_initialization(requests_web_page_product)
+        soup_product_information_table = soup_product_information_table_initialization(soup_product)
+            
+        soup_product_information_extraction(requests_web_page_product, soup_product, soup_product_information_table)
+
+        """
+        Writing in CSV file
+        """
+        product_information_loading_csv_format()
+
+
+main("http://books.toscrape.com/catalogue/category/books/mystery_3/index.html")
+
 
 
 
 """
-fichier = open("hello.txt", "w")
-with open("file.txt") as fichier:#mode douverture par defaut : r
+
+#Step 3 : Choisissez n'importe quelle catégorie sur le site de Books to Scrape.
+#Écrivez un script Python qui consulte la page de la catégorie choisie, et extrait l'URL de la page 
+#Produit de chaque livre appartenant à cette catégorie
+#Remarque : certaines pages de catégorie comptent plus de 20 livres, qui sont donc répartis sur différentes pages 
+#(«  pagination  »). Votre application doit être capable de parcourir automatiquement les multiples pages si présentes. 
+#
+#-->avec la classe "pager" ? non, chercher "next", le bouton devrait contenir le lien ; à combiner avec une fonction if 
+#ou alors while next = None:
+
+
+
+
+
+#step 4 : Ensuite, étendez votre travail à l'écriture d'un script qui consulte le site de Books to Scrape, extrait toutes les catégories de livres 
+
+url_book_to_scrap = "http://books.toscrape.com/"
+requests_web_page_book_to_scrap = requests.get(url_book_to_scrap)
+soup_book_to_scrap = BeautifulSoup(requests_web_page_book_to_scrap, "html.parser")
+
+
+product_information_table = soup.find(class_ = "table table-striped")
+product_information = product_information_table.find_all("td")
+
+book_to_scrap_div_side_books_categories = soup_book_to_scrap.find(class_ = "side_categories")
+#book_to_scrap_ul_navigation_list_books_categories = book_to_scrap_div_side_books_categories.find(class_ = "nav nav-list")
+book_to_scrap_books_categories_list = book_to_scrap_div_side_books_categories.findAll("li")
+for lis in book_to_scrap_books_categories_list:
+    link_a_book_categorie = lis.find("a")
+    
+    link_a_href_book_categorie = link_a_book_categorie["href"]
+    link_complete_book_category = "http://books.toscrape.com/" + link_a_href_book_categorie
+    
+    name_book_category = link_a_book_categorie.string[62:] #spaces before the name
+
+    print(link_complete_book_category)
+    print(name_book_category)
+
+
 """
