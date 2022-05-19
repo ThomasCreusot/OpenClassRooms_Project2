@@ -5,6 +5,7 @@ OpenClassRooms Project n°2 : Uses bases of Python for market analysis
 
 from itertools import product
 from os import link
+from os import mkdir
 
 import requests
 from bs4 import BeautifulSoup
@@ -245,6 +246,7 @@ def soup_product_information_extraction(requests_web_page_product, soup_product,
 
 products_with_UnicodeEncodeError_for_information_loading_csv = []
 
+
 def product_information_loading_csv_format(url_category, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list):
     """Writes product information in a CSV file"""
 
@@ -259,7 +261,7 @@ def product_information_loading_csv_format(url_category, product_page_urls_list,
 
     print("url_category_name" + url_category_name)
 
-    with open('{0}_books_toscrap_category_{1}.csv'.format(url_category_prefix.replace("_", "0"), url_category_name), 'w') as csv_file:
+    with open('scraping_CSV_files/{0}_books_toscrap_category_{1}.csv'.format(url_category_prefix.replace("_", "0"), url_category_name), 'w') as csv_file:
     
     #Creation of a 'writer' object
         csv_writer = csv.writer(csv_file, delimiter=',')
@@ -377,15 +379,46 @@ def listing_category_urls_from_website(url_book_to_scrap):
     return url_complete_book_category_without_indexHtml_list
 
 
+def scraping_CSV_files_folder_initialization():
+    mkdir("scraping_CSV_files")
+    print("The folder 'scraping_CSV_files' has been created and will contain the CSV files resulting from the ETL process")
+
+
+def scraping_products_pictures_folder_initialization():
+    mkdir("scraping_products_pictures")
+    print("The folder 'scraping_products_pictures' has been created and will contain the pictures downladed from the ETL process")
+
+
+def product_picture_downloading(url_book_to_scrap, soup_product):
+
+    picture_url_src = soup_product.find("div", id = "product_gallery").find("div", class_="thumbnail").find("div", class_="carousel-inner").find("div", class_="item active").find("img")["src"]
+    complete_picture_url = url_book_to_scrap[:-10] + picture_url_src[6:]
+    print(complete_picture_url)
+
+    picture_file_name = soup_product.find(class_ = "active").string # = the name, but i do not use the function  title_extraction as it requires a table)
+    picture_file_name_withPath_withoutSlash_withoutTwoPoints_withoutInterogationPoint_withoutAsterix_withoutComma_limitedTo20Car_jpg = "scraping_products_pictures/" + picture_file_name[:20].replace("/", "_").replace(":", "__").replace("?", "___").replace("*", "____").replace('"', "___") +  ".jpg"
+    picture_file = open(picture_file_name_withPath_withoutSlash_withoutTwoPoints_withoutInterogationPoint_withoutAsterix_withoutComma_limitedTo20Car_jpg, "wb") #did not work if I kept all the picture_file_name: too long I guess, so I decided to take the 20 first letters
+
+    requests_picture_product = requests.get(complete_picture_url)
+
+    picture_file.write(requests_picture_product.content)
+    picture_file.close
+
+    print("Picture download successful")
+    
+
 
 def main(url_book_to_scrap):
     """ . """      
+
+    scraping_CSV_files_folder_initialization()
+    scraping_products_pictures_folder_initialization()
 
     print("")
     print("== CATEGORIES FOUND ON THE WEBSITE {0} ==".format(url_book_to_scrap))
     print("")
     url_complete_book_category_without_indexHtml_list = listing_category_urls_from_website(url_book_to_scrap)
-    for url_category in url_complete_book_category_without_indexHtml_list:
+    for url_category in url_complete_book_category_without_indexHtml_list: 
 
         #Reinitialization of the tables for each category
         product_page_urls_list = tables_for_product_information_extraction_initialization()[0]
@@ -403,13 +436,13 @@ def main(url_book_to_scrap):
         print("")
         print("==== PRODUCTS FOUND FOR EACH CATEGORY ====")
         print("")
-        """1. Extraction of products urls from one category url"""
+        """ Extraction of products urls from one category url """
         complete_product_urls_list = listing_products_urls_from_category(url_category)
-        for complete_product_url in complete_product_urls_list:
+        for complete_product_url in complete_product_urls_list: 
 
-            """2. ETL at product scale"""
+            """ ETL at product scale"""
             """
-            2.1 Requests and Soup objects initialization; 
+            Requests and Soup objects initialization; 
             Information, (from table) extraction
             Extraction of all information asked; and save in python tables []
             """
@@ -421,9 +454,11 @@ def main(url_book_to_scrap):
             
             soup_product_information_extraction(requests_web_page_product, soup_product, soup_product_information_table, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list)
 
-        """
-        2.2 Writing in CSV file
-        """
+
+            """Picture downloading"""
+            product_picture_downloading(url_book_to_scrap, soup_product)
+
+        """ Writing in CSV file """
         product_information_loading_csv_format(url_category, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list)
         print("")
 
