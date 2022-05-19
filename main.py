@@ -1,6 +1,7 @@
 """
-Project OpenClassRooms n°2 : Uses bases of Python for market analysis
+OpenClassRooms Project n°2 : Uses bases of Python for market analysis
 """
+
 
 from itertools import product
 from os import link
@@ -19,18 +20,19 @@ review_rating_string_int_correspondance = {
     "Five": 5
 }
 
-
-product_page_urls_list = []
-universal_product_codes_list = []
-titles_list = []
-prices_including_tax_list = []
-prices_excluding_tax_list = []
-numbers_available_list = []
-products_descriptions_list = []
-categories_list = []
-review_ratings_list = []
-images_urls_list = []
-
+def tables_for_product_information_extraction_initialization():
+    product_page_urls_list = []
+    universal_product_codes_list = []
+    titles_list = []
+    prices_including_tax_list = []
+    prices_excluding_tax_list = []
+    numbers_available_list = []
+    products_descriptions_list = []
+    categories_list = []
+    review_ratings_list = []
+    images_urls_list = []
+    
+    return product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list
 
 def requests_web_page_product_initialization(url_product):
     """Initialization of a Requests object corresponding to a product (a book) web page"""
@@ -57,7 +59,8 @@ def soup_product_information_table_initialization(soup_product):
     return product_information 
 
 
-def product_page_urls_list_extraction(requests_web_page_product):
+
+def product_page_urls_list_extraction(requests_web_page_product, product_page_urls_list):
     """Returns product_page_url from HTML_web_page_product"""
 
     product_page_url = requests_web_page_product.url
@@ -66,7 +69,7 @@ def product_page_urls_list_extraction(requests_web_page_product):
     return product_page_url
 
 
-def universal_product_code_extraction(product_information):
+def universal_product_code_extraction(product_information, universal_product_codes_list):
     """Returns universal_product_code from product_information"""
 
     universal_product_code = product_information[0].string
@@ -75,7 +78,7 @@ def universal_product_code_extraction(product_information):
     return universal_product_code
 
 
-def title_extraction(soup_product):
+def title_extraction(soup_product, titles_list):
     """Returns title from soup_product"""
 
     title = soup_product.find(class_ = "active").string
@@ -84,7 +87,7 @@ def title_extraction(soup_product):
     return title
 
 
-def price_including_tax_extraction(product_information):
+def price_including_tax_extraction(product_information, prices_including_tax_list):
     """Returns price_including_tax from product_information"""
 
     price_including_tax = product_information[3].string
@@ -93,7 +96,7 @@ def price_including_tax_extraction(product_information):
     return price_including_tax
 
 
-def price_excluding_tax_extraction(product_information):
+def price_excluding_tax_extraction(product_information, prices_excluding_tax_list):
     """Returns price_excluding_tax from product_information"""
 
     price_excluding_tax = product_information[2].string
@@ -102,7 +105,7 @@ def price_excluding_tax_extraction(product_information):
     return price_excluding_tax
 
 
-def number_available_extraction(product_information):
+def number_available_extraction(product_information, numbers_available_list):
     """Returns number_available from product_information"""
 
     availability = product_information[5].string
@@ -118,7 +121,7 @@ def number_available_extraction(product_information):
 products_with_AttributeError_for_product_description_extraction = []
 
 
-def product_description_extraction(soup_product):
+def product_description_extraction(soup_product, products_descriptions_list):
     """Returns product_description from soup_product"""
 
     global products_with_AttributeError_for_product_description_extraction
@@ -136,7 +139,7 @@ def product_description_extraction(soup_product):
     return product_description
 
 
-def catergory_extraction(soup_product):
+def category_extraction(soup_product, categories_list):
     """Returns category from soup_product"""
 
     breadcrumb_class = soup_product.find(class_="breadcrumb")
@@ -148,7 +151,7 @@ def catergory_extraction(soup_product):
     return category 
 
 
-def review_rating_extraction(soup_product):
+def review_rating_extraction(soup_product, review_ratings_list):
     """Returns review_rating from soup_product"""
 
     #NB: i tried with """ print(paragraph["class_"]) """" : key error
@@ -167,7 +170,7 @@ def review_rating_extraction(soup_product):
     return review_rating
 
 
-def image_url_extraction(soup_product):
+def image_url_extraction(soup_product, images_urls_list):
     """Returns image_url from soup_product"""
 
     item_active = soup_product.find(class_ ="item active")
@@ -178,39 +181,38 @@ def image_url_extraction(soup_product):
     return image_url
 
 
-
-def soup_product_information_extraction(requests_web_page_product, soup_product, product_information):
+def soup_product_information_extraction(requests_web_page_product, soup_product, product_information, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list):
     """Extraction of information asked by the step 1 of the OpenClassRoom project"""
 
     #URL
-    product_page_url = product_page_urls_list_extraction(requests_web_page_product)
+    product_page_url = product_page_urls_list_extraction(requests_web_page_product, product_page_urls_list)
 
     #UPC
-    universal_product_code = universal_product_code_extraction(product_information)
+    universal_product_code = universal_product_code_extraction(product_information, universal_product_codes_list)
 
     #Title
-    title = title_extraction(soup_product)
+    title = title_extraction(soup_product, titles_list)
 
     #Price including tax
-    price_including_tax = price_including_tax_extraction(product_information)
+    price_including_tax = price_including_tax_extraction(product_information, prices_including_tax_list)
 
     #Price excluding tax
-    price_excluding_tax = price_excluding_tax_extraction(product_information)
+    price_excluding_tax = price_excluding_tax_extraction(product_information, prices_excluding_tax_list)
 
     #Availability
-    number_available = number_available_extraction(product_information)
+    number_available = number_available_extraction(product_information, numbers_available_list)
 
     #Product description
-    product_description = product_description_extraction(soup_product)
+    product_description = product_description_extraction(soup_product, products_descriptions_list)
 
     #Category
-    category = catergory_extraction(soup_product)
+    category = category_extraction(soup_product, categories_list)
 
     #Review rating
-    review_rating = review_rating_extraction(soup_product)
+    review_rating = review_rating_extraction(soup_product, review_ratings_list)
 
     #Image URL
-    image_url = image_url_extraction(soup_product)
+    image_url = image_url_extraction(soup_product, images_urls_list)
 
     #TEST
     #print("product_page_url", product_page_url)
@@ -237,7 +239,7 @@ def soup_product_information_extraction(requests_web_page_product, soup_product,
 
 products_with_UnicodeEncodeError_for_information_loading_csv = []
 
-def product_information_loading_csv_format():
+def product_information_loading_csv_format(url_category, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list):
     """Writes product information in a CSV file"""
 
     global products_with_UnicodeEncodeError_for_information_loading_csv
@@ -246,25 +248,31 @@ def product_information_loading_csv_format():
     table_headers = ["product_page_url", "universal_product_code", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
 
     #New CSV file creation
-    with open('books_toscrap.csv', 'w') as csv_file:
+    url_category_name = url_category[51:-1]
+
+    print("url_category_name" + url_category_name)
+
+    with open('books_toscrap_category_{0}.csv'.format(url_category_name), 'w') as csv_file:
     
     #Creation of a 'writer' object
         csv_writer = csv.writer(csv_file, delimiter=',')
         csv_writer.writerow(table_headers)
 
         #Definition of a line : information from python lists/tables [] from soup_product_information_extraction
+
         for product_page_url, universal_product_code, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url in zip(product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list) :
             line = [product_page_url, universal_product_code, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url]
-            
+
             #Writing each line in the CSV file 
             try:
                 csv_writer.writerow(line)
-                print("CSV writing of product information done for : {0}".format(line[2]))
+                #print("CSV writing of product information done for : {0}".format(title))       -->      TOO MUCH PRINTS; DO NOT UNDERSTAND
+                #print("CSV writing of product information done for : {0}".format(line[2]))
             except UnicodeEncodeError:
                 #raise Exception("UnicodeEncodeError found")
-                products_with_UnicodeEncodeError_for_information_loading_csv.append(line[2])
+                #products_with_UnicodeEncodeError_for_information_loading_csv.append(line[2])
+                products_with_UnicodeEncodeError_for_information_loading_csv.append(title)
                 print("UnicodeEncodeError found")
-
 
 
 
@@ -369,8 +377,21 @@ def main(url_book_to_scrap):
     print("")
     print("== CATEGORIES FOUND ON THE WEBSITE {0} ==".format(url_book_to_scrap))
     print("")
-    listing_category_urls_from_website(url_book_to_scrap)
+    url_complete_book_category_without_indexHtml_list = listing_category_urls_from_website(url_book_to_scrap)
     for url_category in url_complete_book_category_without_indexHtml_list:
+
+        #Reinitialization of the tables for each category
+        product_page_urls_list = tables_for_product_information_extraction_initialization()[0]
+        universal_product_codes_list = tables_for_product_information_extraction_initialization()[1]
+        titles_list = tables_for_product_information_extraction_initialization()[2]
+        prices_including_tax_list = tables_for_product_information_extraction_initialization()[3]
+        prices_excluding_tax_list = tables_for_product_information_extraction_initialization()[4]
+        numbers_available_list = tables_for_product_information_extraction_initialization()[5]
+        products_descriptions_list = tables_for_product_information_extraction_initialization()[6]
+        categories_list = tables_for_product_information_extraction_initialization()[7]
+        review_ratings_list = tables_for_product_information_extraction_initialization()[8]
+        images_urls_list = tables_for_product_information_extraction_initialization()[9]
+        #racourcir avec a,b,c = x,y,z ?
 
         print("")
         print("==== PRODUCTS FOUND FOR EACH CATEGORY ====")
@@ -386,26 +407,28 @@ def main(url_book_to_scrap):
             Extraction of all information asked; and save in python tables []
             """
             print("====== PRODUCT ETL ======")
+            print(complete_product_url)
             requests_web_page_product = requests_web_page_product_initialization(complete_product_url)
             soup_product = soup_product_initialization(requests_web_page_product)
             soup_product_information_table = soup_product_information_table_initialization(soup_product)
-                
-            soup_product_information_extraction(requests_web_page_product, soup_product, soup_product_information_table)
+            
+            soup_product_information_extraction(requests_web_page_product, soup_product, soup_product_information_table, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list)
 
-            """
-            2.2 Writing in CSV file
-            """
-            product_information_loading_csv_format()
-            print("")
+        """
+        2.2 Writing in CSV file
+        """
+        product_information_loading_csv_format(url_category, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list)
+        print("")
 
     print("")
     print("")
     print("================================ CONCLUSION ================================")
-
+    print("")
     print("UnicodeEncodeError was/were found during CSV loading for the following products {0}".format(products_with_UnicodeEncodeError_for_information_loading_csv))
-
-    print("product_description was not found for the following products: {0}".format(products_with_AttributeError_for_product_description_extraction))
-
+    print("")
+    print("The product_description was not found for the following products: {0}".format(products_with_AttributeError_for_product_description_extraction))
+    print("")
     print("ETL performed for each product of the {0} website: performed with success. Errors which happenned during the execution are listed hereunder".format(url_book_to_scrap))
+    print("")
 
 main("http://books.toscrape.com/index.html")
