@@ -132,9 +132,15 @@ def product_description_extraction(soup_product, products_descriptions_list):
         product_description = product_description_title.find_next_sibling("p").string
     except AttributeError:
         product_description = ""
-        products_with_AttributeError_for_product_description_extraction.append(title_extraction(soup_product))
+        
+        products_with_AttributeError_for_product_description_extraction.append(soup_product.find(class_ = "active").string) #the name, but i do not use the function  title_extraction as it requires a table
         print("AttributeError : No title for this product")
-
+        """try: 
+            products_with_AttributeError_for_product_description_extraction.append(title_extraction(soup_product, "")) 
+            print("AttributeError : No title for this product")
+        except AttributeError:
+            #No list required as this function is not used here to register the title
+            pass"""
     products_descriptions_list.append(product_description)
     return product_description
 
@@ -248,11 +254,12 @@ def product_information_loading_csv_format(url_category, product_page_urls_list,
     table_headers = ["product_page_url", "universal_product_code", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
 
     #New CSV file creation
-    url_category_name = url_category[51:-1]
+    url_category_prefix = url_category[-3:-1]
+    url_category_name = url_category[51:-3]
 
     print("url_category_name" + url_category_name)
 
-    with open('books_toscrap_category_{0}.csv'.format(url_category_name), 'w') as csv_file:
+    with open('{0}_books_toscrap_category_{1}.csv'.format(url_category_prefix.replace("_", "0"), url_category_name), 'w') as csv_file:
     
     #Creation of a 'writer' object
         csv_writer = csv.writer(csv_file, delimiter=',')
