@@ -9,7 +9,6 @@ from os import mkdir
 
 import requests
 from bs4 import BeautifulSoup
-
 import csv
 
 
@@ -21,7 +20,14 @@ review_rating_string_int_correspondance = {
     "Five": 5
 }
 
+products_with_AttributeError_for_product_description_extraction = []
+products_with_UnicodeEncodeError_for_information_loading_csv = []
+complete_product_urls_list_reinitizaliation = True
+url_complete_book_category_without_indexHtml_list = []
+
+
 def tables_for_product_information_extraction_initialization():
+    """(Re-)initialization of the tables containing information related to products"""
     product_page_urls_list = []
     universal_product_codes_list = []
     titles_list = []
@@ -34,6 +40,7 @@ def tables_for_product_information_extraction_initialization():
     images_urls_list = []
     
     return product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list
+
 
 def requests_web_page_product_initialization(url_product):
     """Initialization of a Requests object corresponding to a product (a book) web page"""
@@ -58,7 +65,6 @@ def soup_product_information_table_initialization(soup_product):
     product_information = product_information_table.find_all("td")
 
     return product_information 
-
 
 
 def product_page_urls_list_extraction(requests_web_page_product, product_page_urls_list):
@@ -119,30 +125,21 @@ def number_available_extraction(product_information, numbers_available_list):
     return number_available
 
 
-products_with_AttributeError_for_product_description_extraction = []
-
-
 def product_description_extraction(soup_product, products_descriptions_list):
     """Returns product_description from soup_product"""
 
     global products_with_AttributeError_for_product_description_extraction
 
-    #error with http://books.toscrape.com/catalogue/alice-in-wonderland-alices-adventures-in-wonderland-1_5/index.html
+    #error with http://books.toscrape.com/catalogue/alice-in-wonderland-alices-adventures-in-wonderland-1_5/index.html -> solution :try/except
     try:
         product_description_title = soup_product.find(id = "product_description")
         product_description = product_description_title.find_next_sibling("p").string
     except AttributeError:
         product_description = ""
-        
-        products_with_AttributeError_for_product_description_extraction.append(soup_product.find(class_ = "active").string) #the name, but i do not use the function  title_extraction as it requires a table
+        products_with_AttributeError_for_product_description_extraction.append(soup_product.find(class_ = "active").string) # 'soup_product.find(class_ = "active").string' = the name, but i do not use the function  title_extraction as it requires a table
         print("AttributeError : No title for this product")
-        """try: 
-            products_with_AttributeError_for_product_description_extraction.append(title_extraction(soup_product, "")) 
-            print("AttributeError : No title for this product")
-        except AttributeError:
-            #No list required as this function is not used here to register the title
-            pass"""
-    products_descriptions_list.append(product_description)
+
+    products_descriptions_list.append(product_description.replace(";", "")) #replace() function: to avoid the ";" which in provoques writing in several cases in excel
     return product_description
 
 
@@ -161,7 +158,7 @@ def category_extraction(soup_product, categories_list):
 def review_rating_extraction(soup_product, review_ratings_list):
     """Returns review_rating from soup_product"""
 
-    #NB: i tried with """ print(paragraph["class_"]) """" : key error
+    #the expression """ print(paragraph["class_"]) """ resulted in a KeyError
     paragraphs_attributes = []
     paragraphs = soup_product.findAll("p")
     for paragraph in paragraphs:
@@ -221,30 +218,7 @@ def soup_product_information_extraction(requests_web_page_product, soup_product,
     #Image URL
     image_url = image_url_extraction(soup_product, images_urls_list)
 
-    #TEST
-    #print("product_page_url", product_page_url)
-    #print("")
-    #print("universal_product_code", universal_product_code)
-    #print("")
-    #print("title", title)
-    #print("")
-    #print("price_including_tax", price_including_tax)
-    #print("")
-    #print("price_excluding_tax", price_excluding_tax)
-    #print("")
-    #print("number_available", number_available)
-    #print("")
-    #print("product_description", product_description)
-    #print("")
-    #print("category", category)
-    #print("")
-    #print("review_rating", review_rating)
-    #print("")
-    #print("image_url", image_url)
-    print("Extraction of product information done for : {0}".format(title))
-
-
-products_with_UnicodeEncodeError_for_information_loading_csv = []
+    print("Extraction of product information done for the product : {0}".format(title))
 
 
 def product_information_loading_csv_format(url_category, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list):
@@ -259,7 +233,8 @@ def product_information_loading_csv_format(url_category, product_page_urls_list,
     url_category_prefix = url_category[-3:-1]
     url_category_name = url_category[51:-3]
 
-    print("url_category_name" + url_category_name)
+    print("")
+    print("CSV file created and completed for url category name " + url_category_name.upper())
 
     with open('scraping_CSV_files/{0}_books_toscrap_category_{1}.csv'.format(url_category_prefix.replace("_", "0"), url_category_name), 'w') as csv_file:
     
@@ -268,24 +243,18 @@ def product_information_loading_csv_format(url_category, product_page_urls_list,
         csv_writer.writerow(table_headers)
 
         #Definition of a line : information from python lists/tables [] from soup_product_information_extraction
-
         for product_page_url, universal_product_code, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url in zip(product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list) :
             line = [product_page_url, universal_product_code, title, price_including_tax, price_excluding_tax, number_available, product_description, category, review_rating, image_url]
 
             #Writing each line in the CSV file 
             try:
                 csv_writer.writerow(line)
-                #print("CSV writing of product information done for : {0}".format(title))       -->      TOO MUCH PRINTS; DO NOT UNDERSTAND
-                #print("CSV writing of product information done for : {0}".format(line[2]))
+                #the expression 'print("CSV writing of product information done for : {0}".format(title))' resulted in too much prints
+                # I do not understand; I guess it is the zip behviour 
             except UnicodeEncodeError:
-                #raise Exception("UnicodeEncodeError found")
-                #products_with_UnicodeEncodeError_for_information_loading_csv.append(line[2])
                 products_with_UnicodeEncodeError_for_information_loading_csv.append(title)
                 print("UnicodeEncodeError found")
 
-
-
-complete_product_urls_list_reinitizaliation = True
 
 def listing_products_urls_from_category(url_category, url_category_pageX =""):
     """Extracts and returns URLs of all products of a CATEGORY"""
@@ -305,14 +274,13 @@ def listing_products_urls_from_category(url_category, url_category_pageX =""):
     soup_category = BeautifulSoup(requests_web_page_category.content, "html.parser")
 
     #Extraction of links of each products of a category, from the URL of the category
-        #category_ol_class_row : searching the element "ol" with class "row"
+    #category_ol_class_row : searching the element "ol" with class "row"
     category_ol_class_row = soup_category.find("ol", class_ = "row")
 
-        #category_ol_li_class_col_xs : searching the element "li" with class "col_xs..." WITHIN the element ol previously found
+    #category_ol_li_class_col_xs : searching the element "li" with class "col_xs..." WITHIN the element ol previously found
     category_ol_li_class_col_xs = category_ol_class_row.findAll(class_ = "col-xs-6 col-sm-4 col-md-3 col-lg-3")
 
     for lis in category_ol_li_class_col_xs:
-        #print(lis)
         category_ol_li_article = lis.find("article")
         category_ol_li_article_div = category_ol_li_article.find("div", class_ = "image_container")
         category_ol_li_article_div_a = category_ol_li_article_div.find("a")
@@ -321,13 +289,13 @@ def listing_products_urls_from_category(url_category, url_category_pageX =""):
         
         complete_product_urls_list.append(complete_product_link)
 
-    #RECURSIVITY 
+    #Recursivity 
     category_li_class_next = soup_category.find("li", class_ = "next")
 
     if category_li_class_next == None:
-        print("No NEXT button")
+        print("No NEXT button at {0}".format(url_category + url_category_pageX))
         complete_product_urls_list_reinitizaliation = True
-        pass
+        print("All products url has been listed for the category url page {0}".format(url_category))
     
     elif category_li_class_next != None:
         complete_product_urls_list_reinitizaliation = False
@@ -335,22 +303,17 @@ def listing_products_urls_from_category(url_category, url_category_pageX =""):
         #Identification of the link for the next page
         category_li_link_a = category_li_class_next.find("a")
         url_category_pageX = category_li_link_a["href"]
-        ##category_li_link_a_href = category_li_link_a["href"] 
-        ##next_page_link = url_category + category_li_link_a_href
         print("There is a NEXT button towards the adress {0}".format(url_category + url_category_pageX))
-        listing_products_urls_from_category(url_category, url_category_pageX) #RECURSIVITY.
+        listing_products_urls_from_category(url_category, url_category_pageX) #Recursivity.
+
+        print("All products url has been listed for the category url page {0}".format(url_category + url_category_pageX))
 
     else: 
-        print("error")
+        print("Error related to NEXT button")
         pass
 
-    print("All products url has been listed for the category {0}".format(url_category + url_category_pageX))
     return complete_product_urls_list
 
-
-
-
-url_complete_book_category_without_indexHtml_list = []
 
 def listing_category_urls_from_website(url_book_to_scrap):
     """Extracts and returns URLs of all categories of a website"""
@@ -362,7 +325,7 @@ def listing_category_urls_from_website(url_book_to_scrap):
     #Extraction of links of each category of the website, from the URL of the index.html page of the website 
     book_to_scrap_div_side_books_categories = soup_book_to_scrap.find(class_ = "side_categories")
     book_to_scrap_ul_navigation_list_books_categories = book_to_scrap_div_side_books_categories.find(class_ = "nav nav-list") 
-    book_to_scrap_books_categories_list = book_to_scrap_ul_navigation_list_books_categories.findAll("li")[1:] #[1:] --> exclusion of "Books": not a category
+    book_to_scrap_books_categories_list = book_to_scrap_ul_navigation_list_books_categories.findAll("li")[1:] #[1:] --> exclusion of "Books"which is not a category
     for lis in book_to_scrap_books_categories_list:
         link_a_book_categorie = lis.find("a")
         
@@ -370,7 +333,7 @@ def listing_category_urls_from_website(url_book_to_scrap):
         url_complete_book_category = "http://books.toscrape.com/" + link_a_href_book_categorie
         url_complete_book_category_without_indexHtml = url_complete_book_category[:-10]
 
-        name_book_category = link_a_book_categorie.string[62:-54] #spaces before the name
+        name_book_category = link_a_book_categorie.string[62:-54] #suppression of spaces before the name ; not used replace() function as some categories got a space in their name
 
         print("URL for '{0}' category found at : {1}".format(name_book_category, url_complete_book_category))
         
@@ -380,20 +343,24 @@ def listing_category_urls_from_website(url_book_to_scrap):
 
 
 def scraping_CSV_files_folder_initialization():
+    """Creates a folder which will contain the CSV files"""
+
     mkdir("scraping_CSV_files")
     print("The folder 'scraping_CSV_files' has been created and will contain the CSV files resulting from the ETL process")
 
 
 def scraping_products_pictures_folder_initialization():
+    """Creates a folder which will contain the pictures files"""
+
     mkdir("scraping_products_pictures")
     print("The folder 'scraping_products_pictures' has been created and will contain the pictures downladed from the ETL process")
 
 
 def product_picture_downloading(url_book_to_scrap, soup_product):
+    """Downloads the picture of a products from its url"""
 
     picture_url_src = soup_product.find("div", id = "product_gallery").find("div", class_="thumbnail").find("div", class_="carousel-inner").find("div", class_="item active").find("img")["src"]
     complete_picture_url = url_book_to_scrap[:-10] + picture_url_src[6:]
-    print(complete_picture_url)
 
     picture_file_name = soup_product.find(class_ = "active").string # = the name, but i do not use the function  title_extraction as it requires a table)
     picture_file_name_withPath_withoutSlash_withoutTwoPoints_withoutInterogationPoint_withoutAsterix_withoutComma_limitedTo20Car_jpg = "scraping_products_pictures/" + picture_file_name[:20].replace("/", "_").replace(":", "__").replace("?", "___").replace("*", "____").replace('"', "___") +  ".jpg"
@@ -404,21 +371,23 @@ def product_picture_downloading(url_book_to_scrap, soup_product):
     picture_file.write(requests_picture_product.content)
     picture_file.close
 
-    print("Picture download successful")
-    
+    print("Product picture downloaded successful")
 
 
 def main(url_book_to_scrap):
     """ . """      
 
+    print("")
+    print("== ETL PROCESS LAUNCHED ==")
     scraping_CSV_files_folder_initialization()
     scraping_products_pictures_folder_initialization()
 
     print("")
-    print("== CATEGORIES FOUND ON THE WEBSITE {0} ==".format(url_book_to_scrap))
+    print("")
+    print("== CATEGORIES URLs FOUND ON THE WEBSITE {0} ==".format(url_book_to_scrap.upper()))
     print("")
     url_complete_book_category_without_indexHtml_list = listing_category_urls_from_website(url_book_to_scrap)
-    for url_category in url_complete_book_category_without_indexHtml_list: 
+    for url_category in url_complete_book_category_without_indexHtml_list[:4]: #[4] to limit the time of exe of the prgram 
 
         #Reinitialization of the tables for each category
         product_page_urls_list = tables_for_product_information_extraction_initialization()[0]
@@ -434,11 +403,12 @@ def main(url_book_to_scrap):
         #racourcir avec a,b,c = x,y,z ?
 
         print("")
-        print("==== PRODUCTS FOUND FOR EACH CATEGORY ====")
         print("")
-        """ Extraction of products urls from one category url """
+        print("==== PRODUCTS FOUND AT CATEGORY {0} URL ====".format(url_category.upper()))
+        print("")
+        print("====== EXTRACTION OF PRODUCTS URLs FROM ONE CATEGORY URL ======")
         complete_product_urls_list = listing_products_urls_from_category(url_category)
-        for complete_product_url in complete_product_urls_list: 
+        for complete_product_url in complete_product_urls_list[:4]: #[4] to limit the time of exe of the prgram 
 
             """ ETL at product scale"""
             """
@@ -446,14 +416,14 @@ def main(url_book_to_scrap):
             Information, (from table) extraction
             Extraction of all information asked; and save in python tables []
             """
+            print("")
             print("====== PRODUCT ETL ======")
-            print(complete_product_url)
+            print("Product url: {0}".format(complete_product_url))
             requests_web_page_product = requests_web_page_product_initialization(complete_product_url)
             soup_product = soup_product_initialization(requests_web_page_product)
             soup_product_information_table = soup_product_information_table_initialization(soup_product)
             
             soup_product_information_extraction(requests_web_page_product, soup_product, soup_product_information_table, product_page_urls_list, universal_product_codes_list, titles_list, prices_including_tax_list, prices_excluding_tax_list, numbers_available_list, products_descriptions_list, categories_list, review_ratings_list, images_urls_list)
-
 
             """Picture downloading"""
             product_picture_downloading(url_book_to_scrap, soup_product)
