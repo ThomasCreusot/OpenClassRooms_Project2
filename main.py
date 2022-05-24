@@ -117,7 +117,7 @@ def number_available_extraction(product_information, numbers_available_list):
 
     availability = product_information[5].string
     if "In stock" in availability:
-        number_available = availability[10:-11]
+        number_available = availability[10:-11] #suppression of "In stock (" and "available)" to keep the number only (e.g. : In stock (18 available) --> 18)
     else:
         number_available = "No available"
     numbers_available_list.append(number_available)
@@ -179,9 +179,9 @@ def image_url_extraction(soup_product, images_urls_list):
 
     item_active = soup_product.find(class_ ="item active")
     image = item_active.find("img") 
-    image_url = "http://books.toscrape.com" + image["src"][5:]
+    image_url = "http://books.toscrape.com" + image["src"][5:] #suppression of "../.." (e.g. : ../../media/cache/95/84/95840dfd67c020067c99d70451147e20.jpg)
     images_urls_list.append(image_url)
-    
+
     return image_url
 
 
@@ -230,8 +230,8 @@ def product_information_loading_csv_format(url_category, product_page_urls_list,
     table_headers = ["product_page_url", "universal_product_code", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
 
     #New CSV file creation
-    url_category_prefix = url_category[-3:-1]
-    url_category_name = url_category[51:-3]
+    url_category_prefix = url_category[-3:-1] #suppression of a part of the URL to keep the category number only (e.g. : http://books.toscrape.com/catalogue/category/books/mystery_3/ --> _3)
+    url_category_name = url_category[51:-3] #suppression of a part of the URL to keep the category name only (e.g. : http://books.toscrape.com/catalogue/category/books/mystery_3/ --> muystery)
 
     print("")
     print("CSV file created and completed for url category name " + url_category_name.upper())
@@ -250,7 +250,7 @@ def product_information_loading_csv_format(url_category, product_page_urls_list,
             try:
                 csv_writer.writerow(line)
                 #the expression 'print("CSV writing of product information done for : {0}".format(title))' resulted in too much prints
-                # I do not understand; I guess it is the zip behviour 
+                # I do not understand; I guess it is the zip behaviour 
             except UnicodeEncodeError:
                 products_with_UnicodeEncodeError_for_information_loading_csv.append(title)
                 print("UnicodeEncodeError found")
@@ -260,7 +260,7 @@ def listing_products_urls_from_category(url_category, url_category_pageX =""):
     """Extracts and returns URLs of all products of a CATEGORY"""
     """url_category_pageX is empty; then , it takes "page2", "page3", etc as value, to complete the url"""
 
-    #Reinitialization of the list of urls of products, if the category changes ; if we are on a "next" page, we keep the list a complete it
+    #Reinitialization of the list of urls of products, if and only if the category changes ; if we are on a "next" page, we keep the list a complete it
     global complete_product_urls_list_reinitizaliation
     global complete_product_urls_list
 
@@ -285,7 +285,7 @@ def listing_products_urls_from_category(url_category, url_category_pageX =""):
         category_ol_li_article_div = category_ol_li_article.find("div", class_ = "image_container")
         category_ol_li_article_div_a = category_ol_li_article_div.find("a")
         category_ol_li_article_div_a_href = category_ol_li_article_div_a["href"] 
-        complete_product_link = "http://books.toscrape.com/catalogue" + category_ol_li_article_div_a_href[8:]
+        complete_product_link = "http://books.toscrape.com/catalogue" + category_ol_li_article_div_a_href[8:] #suppression of ""../../.."" (e.g : ../../../playing-with-fire_602/index.html --> /playing-with-fire_602/index.html)
         
         complete_product_urls_list.append(complete_product_link)
 
@@ -331,7 +331,7 @@ def listing_category_urls_from_website(url_book_to_scrap):
         
         link_a_href_book_categorie = link_a_book_categorie["href"]
         url_complete_book_category = "http://books.toscrape.com/" + link_a_href_book_categorie
-        url_complete_book_category_without_indexHtml = url_complete_book_category[:-10]
+        url_complete_book_category_without_indexHtml = url_complete_book_category[:-10] #suppression of "index.html" at the end of the url
 
         name_book_category = link_a_book_categorie.string[62:-54] #suppression of spaces before the name ; not used replace() function as some categories got a space in their name
 
@@ -360,7 +360,7 @@ def product_picture_downloading(url_book_to_scrap, soup_product):
     """Downloads the picture of a products from its url"""
 
     picture_url_src = soup_product.find("div", id = "product_gallery").find("div", class_="thumbnail").find("div", class_="carousel-inner").find("div", class_="item active").find("img")["src"]
-    complete_picture_url = url_book_to_scrap[:-10] + picture_url_src[6:]
+    complete_picture_url = url_book_to_scrap[:-10] + picture_url_src[6:] #suppression of "index.html" and ""../..", respectively)
 
     picture_file_name = soup_product.find(class_ = "active").string # = the name, but i do not use the function  title_extraction as it requires a table)
     picture_file_name_withPath_withoutSlash_withoutTwoPoints_withoutInterogationPoint_withoutAsterix_withoutComma_limitedTo20Car_jpg = "scraping_products_pictures/" + picture_file_name[:20].replace("/", "_").replace(":", "__").replace("?", "___").replace("*", "____").replace('"', "___") +  ".jpg"
@@ -387,7 +387,7 @@ def main(url_book_to_scrap):
     print("== CATEGORIES URLs FOUND ON THE WEBSITE {0} ==".format(url_book_to_scrap.upper()))
     print("")
     url_complete_book_category_without_indexHtml_list = listing_category_urls_from_website(url_book_to_scrap)
-    for url_category in url_complete_book_category_without_indexHtml_list[:4]: #[4] to limit the time of exe of the prgram 
+    for url_category in url_complete_book_category_without_indexHtml_list:  
 
         #Reinitialization of the tables for each category
         product_page_urls_list = tables_for_product_information_extraction_initialization()[0]
@@ -400,7 +400,6 @@ def main(url_book_to_scrap):
         categories_list = tables_for_product_information_extraction_initialization()[7]
         review_ratings_list = tables_for_product_information_extraction_initialization()[8]
         images_urls_list = tables_for_product_information_extraction_initialization()[9]
-        #racourcir avec a,b,c = x,y,z ?
 
         print("")
         print("")
@@ -408,7 +407,7 @@ def main(url_book_to_scrap):
         print("")
         print("====== EXTRACTION OF PRODUCTS URLs FROM ONE CATEGORY URL ======")
         complete_product_urls_list = listing_products_urls_from_category(url_category)
-        for complete_product_url in complete_product_urls_list[:4]: #[4] to limit the time of exe of the prgram 
+        for complete_product_url in complete_product_urls_list: 
 
             """ ETL at product scale"""
             """
