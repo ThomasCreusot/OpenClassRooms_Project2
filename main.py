@@ -25,6 +25,7 @@ products_with_UnicodeEncodeError_for_information_loading_csv = []
 complete_product_urls_list_reinitizaliation = True
 url_complete_book_category_without_indexHtml_list = []
 
+picture_count = 0 #2022 05 30 : I download only 985 pictures without the picture_count
 
 def tables_for_product_information_extraction_initialization():
     """(Re-)initialization of the tables containing information related to products"""
@@ -356,20 +357,26 @@ def scraping_products_pictures_folder_initialization():
     print("The folder 'scraping_products_pictures' has been created and will contain the pictures downladed from the ETL process")
 
 
+
+
 def product_picture_downloading(url_book_to_scrap, soup_product):
     """Downloads the picture of a products from its url"""
+
+    global picture_count #2022 05 30 : I download only 985 pictures without the picture_count
 
     picture_url_src = soup_product.find("div", id = "product_gallery").find("div", class_="thumbnail").find("div", class_="carousel-inner").find("div", class_="item active").find("img")["src"]
     complete_picture_url = url_book_to_scrap[:-10] + picture_url_src[6:] #suppression of "index.html" and ""../..", respectively)
 
     picture_file_name = soup_product.find(class_ = "active").string # = the name, but i do not use the function  title_extraction as it requires a table)
-    picture_file_name_withPath_withoutSlash_withoutTwoPoints_withoutInterogationPoint_withoutAsterix_withoutComma_limitedTo20Car_jpg = "scraping_products_pictures/" + picture_file_name[:20].replace("/", "_").replace(":", "__").replace("?", "___").replace("*", "____").replace('"', "___") +  ".jpg"
+    picture_file_name_withPath_withoutSlash_withoutTwoPoints_withoutInterogationPoint_withoutAsterix_withoutComma_limitedTo20Car_jpg = "scraping_products_pictures/" + str(picture_count) + "_" + picture_file_name[:20].replace("/", "_").replace(":", "__").replace("?", "___").replace("*", "____").replace('"', "___") +  ".jpg" #2022 05 30 : I download only 985 pictures without the picture_count
     picture_file = open(picture_file_name_withPath_withoutSlash_withoutTwoPoints_withoutInterogationPoint_withoutAsterix_withoutComma_limitedTo20Car_jpg, "wb") #did not work if I kept all the picture_file_name: too long I guess, so I decided to take the 20 first letters
 
     requests_picture_product = requests.get(complete_picture_url)
 
     picture_file.write(requests_picture_product.content)
     picture_file.close
+
+    picture_count += 1 #2022 05 30 : I download only 985 pictures without the picture_count
 
     print("Product picture downloaded successful")
 
